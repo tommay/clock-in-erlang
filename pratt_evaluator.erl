@@ -23,13 +23,13 @@ create_tokens_dict() ->
 	 {$*, infix(30, '*', fun (Left, Right) -> Left * Right end)},
 	 {$/, infix(30, '/', fun (Left, Right) -> Left / Right end)},
 	 {$^, infix(40, '^', right, fun (Left, Right) -> math:pow(Left, Right) end)}],
-    Dict = lists:fold(
+    Dict = lists:foldl(
 	     fun ({Char, Token}, Dict) ->
 		     dict:store(Char, Token, Dict)
 	     end,
 	     dict:new(),
 	     Tokens),
-    lists:fold(
+    lists:foldl(
       fun (Digit, AccumDict) ->
 	      Token = digit(100, Digit),
 	      dict:store($0 + Digit, Token, AccumDict)
