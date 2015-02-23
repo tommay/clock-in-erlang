@@ -75,3 +75,12 @@ more_expression(This, Left, Rbp) ->
 	false ->
 	    {This, Left}
     end.
+
+expect(This, Type) ->
+    case lookahead_token()#token.type == Type of
+	true ->
+	    {NewThis, _Token} = token(This),
+x	    NewThis;
+	false ->
+	    raise "Expected #{expected_token_class}, got #{@token.class}"
+    end.
