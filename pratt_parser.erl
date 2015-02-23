@@ -6,8 +6,6 @@
 
 -include("token.hrl").
 
--define(class(Rec), (begin {class, Module} = element(2, Rec), Module end)).
-
 %% A Pratt parser.  Similar to a recursive decent parser but instead of
 %% coding a function for each production, the syntax is coded in a set
 %% of token objects that are yielded by the lexer.  New operators and
