@@ -10,30 +10,37 @@ eval(String) ->
     pratt_parser:eval(Tokens).
 
 tokenize(String) ->
-    lists:map(fun (Char) -> create_token(Char) end, String).
+    Dict = create_tokens_dict(),
+    lists:map(fun (Char) -> dict:fetch(Char, Dict) end, String).
+
+create_tokens_dict() ->
+    Tokens =
+	[{$(, left_paren(0)},
+	 {$), right_paren(0)},
+	 {$=, infix(10, '=', fun (Left, Right) -> Left == Right end)},
+	 {$+, infix(20, '+',  fun (Left, Right) -> Left + Right end)},
+	 {$-, infix(20, '-', fun (Left, Right) -> Left - Right end)},
+	 {$*, infix(30, '*', fun (Left, Right) -> Left * Right end)},
+	 {$/, infix(30, '/', fun (Left, Right) -> Left / Right end)},
+	 {$^, infix(40, '^', right, fun (Left, Right) -> math:pow(Left, Right) end)}],
+    Dict = lists:fold(
+	     fun ({Char, Token}, Dict) ->
+		     dict:store(Char, Token, Dict)
+	     end,
+	     dict:new(),
+	     Tokens),
+    lists:fold(
+      fun (Digit, AccumDict) ->
+	      Token = digit(100, Digit),
+	      dict:store($0 + Digit, Token, AccumDict)
+      end,
+      Dict,
+      lists:seq(0, 9)).
 
 %% The simple clock expressions don't use parentheses.  These are just
 %% here to see how easy it is to slip new rules into a grammar.  It is
 %% indeed easy.  No need to modify existing rules or recompile a BNF
 %% grammar.
-
-create_token($() ->
-    left_paren(0);
-create_token($)) ->
-    #token{type = right_paren, lbp = 0};
-
-create_token($=) ->
-    infix(10, '=', fun (Left, Right) -> Left == Right end);
-create_token($+) ->
-    infix(20, '+',  fun (Left, Right) -> Left + Right end);
-create_token($-) ->
-    infix(20, '-', fun (Left, Right) -> Left - Right end);
-create_token($*) ->
-    infix(30, '*', fun (Left, Right) -> Left * Right end);
-create_token($/) ->
-    infix(30, '/', fun (Left, Right) -> Left / Right end);
-create_token($^) ->
-    infix(40, '^', right, fun (Left, Right) -> math:pow(Left, Right) end);
 
 left_paren(Lbp) ->
     #token{
@@ -41,31 +48,33 @@ left_paren(Lbp) ->
        lbp = Lbp,
        nud = fun (Parser) ->
 		     {Parser2, Value} = pratt_parser:expression(Parser, Lbp),
-		     Parser3 = pratt_parser:expect(NewParser, right_paren),
-		     {Parser3, Value}.
+		     Parser3 = pratt_parser:expect(Parser2, right_paren),
+		     {Parser3, Value}
 	     end
       }.
+
+right_paren(Lbp) ->
+    #token{type = right_paren, lbp = Lbp}.
 
 infix(Lbp, Type, Func) ->
     infix(Lbp, Lbp, Type, Func).
 
 infix(Lbp, Type, right, Func) ->
-    infix(Lbp, Rbp - 1, Type, Func);
+    infix(Lbp, Lbp - 1, Type, Func);
 infix(Lbp, Rbp, Type, Func) ->
     #token{
        type = Type,
        lbp = Lbp,
-       lcd = fun (This, Parser, Left) ->
+       lcd = fun (Parser, Left) ->
 		     {NewParser, Right} = pratt_parser:expression(Parser, Rbp),
 		     {NewParser, Func(Left, Right)}
 	     end
       }.
 
 digit(Lbp, Digit) ->
-    Value = list_to_integer(Digit),
     #token{
        type = digit,
        lbp = Lbp,
-       nud = fun (This, Parser) -> {Parser, Value} end,
-       lcd = fun (This, Parser, Left) -> {Parser, Left*10 + Value} end
+       nud = fun (Parser) -> {Parser, Digit} end,
+       lcd = fun (Parser, Left) -> {Parser, Left*10 + Digit} end
       }.

@@ -55,7 +55,7 @@ new(Tokens) when is_list(Tokens) ->
 lookahead_token(_This = #pratt_parser{tokens = [Token | _Rest]}) ->
     Token;
 lookahead_token(_This = #pratt_parser{tokens = []}) ->
-    end_token:new().
+    #token{type = end_token}.
 
 token(This = #pratt_parser{tokens = [Token | Rest]}) ->
     {This#pratt_parser{tokens = Rest}, Token}.
@@ -63,7 +63,7 @@ token(This = #pratt_parser{tokens = [Token | Rest]}) ->
 %% Returns {NewThis, Value}.
 expression(This, Rbp) ->
     {This2, Token} = token(This),
-    {This3, Left} = (Token#token.nud)(Token, This2),
+    {This3, Left} = (Token#token.nud)(This2),
     more_expression(This3, Left, Rbp).
 
 %% Returns {NewThis, Value}.
@@ -72,7 +72,7 @@ more_expression(This, Left, Rbp) ->
     case Rbp < LookaheadToken#token.lbp of
 	true ->
 	    {This2, Token} = token(This),
-	    {This3, Left2} = (Token#token.lcd)(Token, This2, Left),
+	    {This3, Left2} = (Token#token.lcd)(This2, Left),
 	    more_expression(This3, Left2, Rbp);
 	false ->
 	    {This, Left}
