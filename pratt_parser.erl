@@ -1,8 +1,10 @@
 -module(pratt_parser).
--export([eval/1]).
+-export([eval/1, expression/2, expect/2]).
 
 -record(pratt_parser, {tokens}).
 -define(is_pratt_parser(Term), is_record(Term, pratt_parser)).
+
+-include("token.hrl").
 
 -define(class(Rec), (begin {class, Module} = element(2, Rec), Module end)).
 
@@ -61,26 +63,27 @@ token(This = #pratt_parser{tokens = [Token | Rest]}) ->
 %% Returns {NewThis, Value}.
 expression(This, Rbp) ->
     {This2, Token} = token(This),
-    {This3, Left} = ?class(Token):nud(Token, This2),
+    {This3, Left} = (Token#token.nud)(Token, This2),
     more_expression(This3, Left, Rbp).
 
 %% Returns {NewThis, Value}.
 more_expression(This, Left, Rbp) ->
     LookaheadToken = lookahead_token(This),
-    case Rbp < ?class(LookaheadToken):lbp(LookaheadToken) of
+    case Rbp < LookaheadToken#token.lbp of
 	true ->
 	    {This2, Token} = token(This),
-	    {This3, Left2} = ?class(Token):lcd(Token, This2, Left),
+	    {This3, Left2} = (Token#token.lcd)(Token, This2, Left),
 	    more_expression(This3, Left2, Rbp);
 	false ->
 	    {This, Left}
     end.
 
-expect(This, Type) ->
-    case lookahead_token()#token.type == Type of
+expect(This, ExpectedType) ->
+    Type = (lookahead_token(This))#token.type,
+    case Type == ExpectedType of
 	true ->
 	    {NewThis, _Token} = token(This),
-x	    NewThis;
+	    NewThis;
 	false ->
-	    raise "Expected #{expected_token_class}, got #{@token.class}"
+	    throw(spud:format("Expected ~s, got ~s", [ExpectedType, Type]))
     end.
