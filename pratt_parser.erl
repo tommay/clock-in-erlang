@@ -61,17 +61,17 @@ token(This = #pratt_parser{tokens = [Token | Rest]}) ->
 %% Returns {NewThis, Value}.
 expression(This, Rbp) ->
     {This2, Token} = token(This),
-    ThisAndLeft = ?class(Token):nud(Token, This2),
-    more_expression(ThisAndLeft, Rbp).
+    {This3, Left} = ?class(Token):nud(Token, This2),
+    more_expression(This3, Left, Rbp).
 
 %% Returns {NewThis, Value}.
-more_expression(ThisAndLeft = {This, Left}, Rbp) ->
+more_expression(This, Left, Rbp) ->
     LookaheadToken = lookahead_token(This),
     case Rbp < ?class(LookaheadToken):lbp(LookaheadToken) of
 	true ->
 	    {This2, Token} = token(This),
-	    This3AndLeft2 = ?class(Token):lcd(Token, This2, Left),
-	    more_expression(This3AndLeft2, Rbp);
+	    {This3, Left2} = ?class(Token):lcd(Token, This2, Left),
+	    more_expression(This3, Left2, Rbp);
 	false ->
-	    ThisAndLeft
+	    {This, Left}
     end.
