@@ -1,16 +1,10 @@
-We can do this easily enough without using an actor for the lexer.
-Just need to work out the token/next_token stuff.  A lexer is
-initialized with a list of tokens.  It might as well just *be* a list
-of tokens.
-
-
-
 -module(pratt_parser).
--export([]).
+-export([eval/1]).
 
--record(pratt_parser, {class = {class, ?MODULE}, lexer, token}).
+-record(pratt_parser, {tokens}).
+-define(is_pratt_parser(Term), is_record(Term, pratt_parser)).
 
--define(class(Rec), begin {class, Module} = element(2, Rec), Module end).
+-define(class(Rec), (begin {class, Module} = element(2, Rec), Module end)).
 
 %% A Pratt parser.  Similar to a recursive decent parser but instead of
 %% coding a function for each production, the syntax is coded in a set
@@ -48,34 +42,21 @@ of tokens.
 %% http://effbot.org/zone/simple-top-down-parsing.htm
 %% http://journal.stuffwithstuff.com/2011/03/19/pratt-parsers-expression-parsing-made-easy/
 
-new(Lexer) ->
-    #pratt_parser(lexer = Lexer, lookahead_token = undefined).
+eval(Tokens) when is_list(Tokens) ->
+    PrattParser = new(Tokens),
+    {_New, Value} = expression(PrattParser, 0),
+    Value.
 
+new(Tokens) when is_list(Tokens) ->
+    #pratt_parser{tokens = Tokens}.
 
-class PrattParser
-  def initialize(lexer)
-    @lexer = Enumerator.new do |y|
-      lexer.each do |token|
-        y << token
-      end
-      y << EndToken.new
-    end
+lookahead_token(_This = #pratt_parser{tokens = [Token | _Rest]}) ->
+    Token;
+lookahead_token(_This = #pratt_parser{tokens = []}) ->
+    end_token:new().
 
-    @token = nil
-  end
-
-
-lookahead_token(This) ->
-    This#pratt_parser.lookahead_token.
-
-token(This) ->
-    Token = lookahead_token(This),
-    NextToken = lexer:next(This#pratt_parser.lexer),
-    {This#pratt_parser{token = NextToken}, Token}.
-
-eval(This) ->
-    {This2, _Token} = token(This),
-    expression(This2, 0).
+token(This = #pratt_parser{tokens = [Token | Rest]}) ->
+    {This#pratt_parser{tokens = Rest}, Token}.
 
 %% Returns {NewThis, Value}.
 expression(This, Rbp) ->
@@ -89,15 +70,8 @@ more_expression(ThisAndLeft = {This, Left}, Rbp) ->
     case Rbp < ?class(LookaheadToken):lbp(LookaheadToken) of
 	true ->
 	    {This2, Token} = token(This),
-	    ThisAndLeft2 = ?class(Token):lcd(Token, This2, Left),
-	    more_expression(ThisAndLeft2, Rbp);
+	    This3AndLeft2 = ?class(Token):lcd(Token, This2, Left),
+	    more_expression(This3AndLeft2, Rbp);
 	false ->
 	    ThisAndLeft
     end.
-
-  class EndToken
-    def lbp
-      0
-    end
-  end
-end
