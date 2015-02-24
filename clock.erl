@@ -20,10 +20,13 @@ main() ->
 	      Equations = equations_for_time(Time),
 	      lists:foreach(
 		fun (Equation) ->
-			case pratt_evaluator:eval(Equation) of
+			try pratt_evaluator:eval(Equation) of
 			    true ->
 				io:format("~s => ~s~n", [Time, Equation]);
 			    false ->
+				void
+			catch
+			    error: badarith ->
 				void
 			end
 		end,
@@ -59,7 +62,7 @@ equations_for_time(Time) ->
 
     OpCombinations = combinations(
 		       length(TimeDigits) - 1,
-		       ["=", "+", "-", "*", ""]),
+		       ["=", "+", "-", "*", "/", ""]),
 
     %% There must be exactly one equals sign.
 
