@@ -18,11 +18,12 @@ create_tokens_dict() ->
 	[{$(, left_paren(0)},
 	 {$), right_paren(0)},
 	 {$=, infix(10, '=', fun (Left, Right) -> Left == Right end)},
-	 {$+, infix(20, '+',  fun (Left, Right) -> Left + Right end)},
+	 {$+, infix(20, '+', fun (Left, Right) -> Left + Right end)},
 	 {$-, infix(20, '-', fun (Left, Right) -> Left - Right end)},
 	 {$*, infix(30, '*', fun (Left, Right) -> Left * Right end)},
 	 {$/, infix(30, '/', fun (Left, Right) -> Left / Right end)},
-	 {$^, infix(40, '^', right, fun (Left, Right) -> math:pow(Left, Right) end)}],
+	 {$^, infix(40, '^', right,
+		    fun (Left, Right) -> math:pow(Left, Right) end)}],
     Dict = lists:foldl(
 	     fun ({Char, Token}, Dict) ->
 		     dict:store(Char, Token, Dict)
@@ -37,17 +38,18 @@ create_tokens_dict() ->
       Dict,
       lists:seq(0, 9)).
 
-%% The simple clock expressions don't use parentheses.  These are just
-%% here to see how easy it is to slip new rules into a grammar.  It is
-%% indeed easy.  No need to modify existing rules or recompile a BNF
-%% grammar.
+%% The simple clock expressions don't use parentheses or
+%% exponentiation.  These are just here to see how easy it is to slip
+%% new rules into a grammar.  It is indeed easy.  No need to modify
+%% existing rules or recompile a BNF grammar.
 
 left_paren(Lbp) ->
     #token{
        type = left_paren,
        lbp = Lbp,
        nud = fun (Parser) ->
-		     {Parser2, Value} = pratt_parser:expression(Parser, Lbp),
+		     {Parser2, Value} =
+			 pratt_parser:expression(Parser, Lbp),
 		     Parser3 = pratt_parser:expect(Parser2, right_paren),
 		     {Parser3, Value}
 	     end
@@ -66,7 +68,8 @@ infix(Lbp, Rbp, Type, Func) ->
        type = Type,
        lbp = Lbp,
        lcd = fun (Parser, Left) ->
-		     {NewParser, Right} = pratt_parser:expression(Parser, Rbp),
+		     {NewParser, Right} =
+			 pratt_parser:expression(Parser, Rbp),
 		     {NewParser, Func(Left, Right)}
 	     end
       }.
