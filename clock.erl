@@ -1,5 +1,6 @@
 -module(clock).
 -export([main/0]).
+-compile(export_all).
 
 %% My 9-year old daughter Chloe and I like to look at the digital clock
 %% sometimes and make equations out of the numbers.  For example,
@@ -8,6 +9,27 @@
 %% I thought it would be fun to code up a program to find all the
 %% "clock eauations".  There are two parts: generating the equations,
 %% and evaluating their truth value.
+%%
+%% I originally did it in Ruby then thought it would be fun to do in
+%% Erlang.  I was right.
+
+main() ->
+    Times = times(),
+    lists:foreach(
+      fun (Time) ->
+	      Equations = equations_for_time(Time),
+	      lists:foreach(
+		fun (Equation) ->
+			case pratt_evaluator:eval(Equation) of
+			    true ->
+				io:format("~s => ~s~n", [Time, Equation]);
+			    false ->
+				void
+			end
+		end,
+		Equations)
+      end,
+      Times).
 
 %% Returns a list of times, ["1:00", "1:01", ..., "12:59"].
 %%
@@ -22,28 +44,6 @@ times() ->
       end,
       lists:seq(1, 12)).
 
-%% Returns the product of two lists, something any self-respecting
-%% functional language should already have.
-%%
-product(A, B) ->
-    lists:flatmap(
-      fun (AE) ->
-	      lists:map(fun (BE) -> [AE, BE] end, B)
-      end,
-      A).
-
-%% Returns all combinations of length N of the elements in List.  Each
-%% combination will use each element zero to N times.
-%%
-combinations(N, List) when is_integer(N), is_list(List) ->
-    [H | T] = lists:duplicate(List),
-    A = lists:fold(
-	  fun (E, Accum) ->
-		  product(Accum, E)
-	  end,
-	  H, T),
-    [lists:flatten(E) || E <- A].
-
 %% Takes a time "1:01" and returns a list of all the well-formed
 %% equations that can be made from the time.
 %%
@@ -57,10 +57,21 @@ equations_for_time(Time) ->
     %% possible operator combinations of the correct length to
     %% intersperse with the time.
 
-    OpCombinations = combinations(length(time_digits) - 1, ["=", "+", "-", "*", "/", ""]),
+    OpCombinations = combinations(
+		       length(TimeDigits) - 1,
+		       ["=", "+", "-", "*", ""]),
+
+    %% There must be exactly one equals sign.
+
+    ValidOpCombinations =
+	lists:filter(
+	  fun (OpCombination) ->
+		  length([E || E <- OpCombination, E == "="]) == 1
+	  end,
+	  OpCombinations),
   
-    %% Zip each operator set into the digits and join the result to
-    %% make a string.
+    %% Zip each operator set into the digits and flatten the result to
+    %% make a "string'.
 
     Lumpy = lists:map(
       fun (Ops) ->
@@ -68,62 +79,35 @@ equations_for_time(Time) ->
 		fun (Op, Digit) ->
 			[Op, Digit]
 		end,
-		["" | Ops],
+		["" | Ops],   % No operator before the initial digit.
 		TimeDigits)
       end,
-      OpCombinations),
+      ValidOpCombinations),
 
     [lists:flatten(E) || E <- Lumpy].
 
-def time_and_equations
-  # Generate each time.
-  # Both the ranges need to use .lazy to get full laziness.
+%% Returns all combinations of length N of the elements in List.  Each
+%% combination will use each element zero to N times.
+%%
+combinations(N, List) when is_integer(N), is_list(List) ->
+    [H | T] = lists:duplicate(N, List),
+    C = lists:foldl(
+	  fun (E, Accum) ->
+		  cons_product(Accum, E)
+	  end,
+	  %% Listify the elements for the initial accumulator so they
+	  %% can be consed onto.
+	  [[E] || E <- H],
+	  T),
+    %% Reverse the lists because things look better that way :-).
+    [lists:reverse(E) || E <- C].
 
-  times = (1..12).lazy.flat_map do |hour|
-    (0..59).lazy.map do |minute|
-      "%d:%02d" % [hour, minute]
-    end
-  end
-
-  # Create all equations for each time:
-  # [[time0, equation0], [time0, equation1], ..., [timeN, equation0], ...]
-
-  time_and_equations = times.flat_map do |time|
-    [time].product(equations_for_time(time))
-  end
-
-  # Select the valid time/equations.
-
-  valid_time_and_equations = time_and_equations.select do |time, equation|
-    PrattEvaluator.eval(equation)
-  end
-
-  # Return them.
-
-  valid_time_and_equations
-end
-
-def equations_for_time(time)
-  time_digits = time.sub(/:/, "").chars
-  
-  # We're going to take the time and intersperse the digits with
-  # all combinations of operators.  Except we only allow one "=".
-  # ops is the array of all possible operator combinations of the
-  # correct length to intersperse with the time.
-  
-  ops = ([["=", "+", "-", "*", "/", ""]] * (time_digits.size - 1))
-    .reduce(&:product)
-    .map(&:flatten)
-    .select{|x| x.count("=") == 1}
-  
-  # Zip each operator set into the digits and join the result to
-  # make a string.  If the string evaluates as true, print it out.
-  
-  ops.map do |op_array|
-    time_digits.zip(op_array).flatten.join
-  end
-end
-
-if __FILE__ == $0
-  main
-end
+%% A is a list of lists.  Returns a new list of lists created
+%% by consing each element of B onto each element of A.
+%%
+cons_product(A, B) ->
+    lists:flatmap(
+      fun (AE) ->
+	      lists:map(fun (BE) -> [BE | AE] end, B)
+      end,
+      A).
