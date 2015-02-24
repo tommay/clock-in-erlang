@@ -62,7 +62,7 @@ equations_for_time(Time) ->
 
     OpCombinations = combinations(
 		       length(TimeDigits) - 1,
-		       ["=", "+", "-", "*", "/", ""]),
+		       ["=", "+", "-", "*", "/", "^", ""]),
 
     %% There must be exactly one equals sign.
 
@@ -93,15 +93,14 @@ equations_for_time(Time) ->
 %% combination will use each element zero to N times.
 %%
 combinations(N, List) when is_integer(N), is_list(List) ->
-    [H | T] = lists:duplicate(N, List),
     C = lists:foldl(
 	  fun (E, Accum) ->
 		  cons_product(Accum, E)
 	  end,
 	  %% Listify the elements for the initial accumulator so they
 	  %% can be consed onto.
-	  [[E] || E <- H],
-	  T),
+	  [[E] || E <- List],
+	  lists:duplicate(N - 1, List)),
     %% Reverse the lists because things look better that way :-).
     [lists:reverse(E) || E <- C].
 
