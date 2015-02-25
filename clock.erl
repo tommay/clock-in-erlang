@@ -90,26 +90,21 @@ equations_for_time(Time) ->
     [lists:flatten(E) || E <- Lumpy].
 
 %% Returns all combinations of length N of the elements in List.  Each
-%% combination will use each element zero to N times.
+%% combination will use each element zero to N times.  If N is zero
+%% then the result is [[]] because there is one combination with zero
+%% elements and it is empty.
 %%
 combinations(N, List) when is_integer(N), is_list(List) ->
-    C = lists:foldl(
-	  fun (E, Accum) ->
-		  cons_product(Accum, E)
-	  end,
-	  %% Listify the elements for the initial accumulator so they
-	  %% can be consed onto.
-	  [[E] || E <- List],
-	  lists:duplicate(N - 1, List)),
-    %% Reverse the lists because things look better that way :-).
+    C = combinations(N, [[]], List),
+    %% Reverse each combination because things look better that way.
     [lists:reverse(E) || E <- C].
 
-%% A is a list of lists.  Returns a new list of lists created
-%% by consing each element of B onto each element of A.
-%%
-cons_product(A, B) ->
-    lists:flatmap(
-      fun (AE) ->
-	      lists:map(fun (BE) -> [BE | AE] end, B)
-      end,
-      A).
+combinations(0, Accum, _List) ->
+    Accum;
+combinations(N, Accum, List) ->
+    NewAccum = lists:flatmap(
+	    fun (C) ->
+		    [[E | C] || E <- List]
+	    end,
+	    Accum),
+    combinations(N - 1, NewAccum, List).
