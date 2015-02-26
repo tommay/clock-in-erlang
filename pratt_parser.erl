@@ -33,7 +33,7 @@
 %%
 %% Only lbp is mandatory.  nud and led will be called only when necessary,
 %% if ever.
-%% nud and lcd can call pratt_parser:expression(Parser, Rbp) to
+%% nud and led can call pratt_parser:expression(Parser, Rbp) to
 %% recursively parse the right expression.  Rp should be the token's
 %%  for left-associativity, bp-1 for right.
 %%
@@ -78,7 +78,7 @@ more_expression(This, Left, Rbp) ->
     case Rbp < LookaheadToken#token.lbp of
 	true ->
 	    {This2, Token} = token(This),
-	    {This3, Left2} = (Token#token.lcd)(This2, Left),
+	    {This3, Left2} = (Token#token.led)(This2, Left),
 	    more_expression(This3, Left2, Rbp);
 	false ->
 	    {This, Left}

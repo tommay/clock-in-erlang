@@ -67,7 +67,7 @@ infix(Lbp, Rbp, Type, Func) ->
     #token{
        type = Type,
        lbp = Lbp,
-       lcd = fun (Parser, Left) ->
+       led = fun (Parser, Left) ->
 		     {NewParser, Right} =
 			 pratt_parser:expression(Parser, Rbp),
 		     {NewParser, Func(Left, Right)}
@@ -79,5 +79,5 @@ digit(Lbp, Digit) ->
        type = digit,
        lbp = Lbp,
        nud = fun (Parser) -> {Parser, Digit} end,
-       lcd = fun (Parser, Left) -> {Parser, Left*10 + Digit} end
+       led = fun (Parser, Left) -> {Parser, Left*10 + Digit} end
       }.

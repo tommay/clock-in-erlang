@@ -1,1 +1,1 @@
--record(token, {type, lbp = 0, nud, lcd}).
+-record(token, {type, lbp = 0, nud, led}).
