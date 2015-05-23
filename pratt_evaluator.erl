@@ -22,6 +22,7 @@ create_tokens_dict() ->
 	 {$-, infix(20, '-', fun (Left, Right) -> Left - Right end)},
 	 {$*, infix(30, '*', fun (Left, Right) -> Left * Right end)},
 	 {$/, infix(30, '/', fun (Left, Right) -> Left / Right end)},
+	 {$%, infix(30, '%', fun (Left, Right) -> Left rem Right end)},
 	 {$^, infix(40, '^', right,
 		    fun (Left, Right) -> math:pow(Left, Right) end)}],
     Dict = lists:foldl(

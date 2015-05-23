@@ -62,7 +62,7 @@ equations_for_time(Time) ->
 
     OpCombinations = combinations(
 		       length(TimeDigits) - 1,
-		       ["=", "+", "-", "*", "/", "^", ""]),
+		       ["=", "+", "-", "*", "/", "%", "^", ""]),
 
     %% There must be exactly one equals sign.
 
