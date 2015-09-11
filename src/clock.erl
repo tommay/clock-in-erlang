@@ -37,15 +37,9 @@ main() ->
 %% Returns a list of times, ["1:00", "1:01", ..., "12:59"].
 %%
 times() ->
-    lists:flatmap(
-      fun (Hour) ->
-	      lists:map(
-		fun (Minute) ->
-			lists:flatten(io_lib:format("~w:~.2.0w", [Hour, Minute]))
-		end,
-		lists:seq(0, 59))
-      end,
-      lists:seq(1, 12)).
+    [lists:flatten(io_lib:format("~w:~.2.0w", [Hour, Minute])) ||
+	Hour <- lists:seq(1, 12),
+	Minute <- lists:seq(0, 59)].
 
 %% Takes a time "1:01" and returns a list of all the well-formed
 %% equations that can be made from the time.
