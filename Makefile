@@ -1,14 +1,11 @@
-# Dirt simple Makefile for a dirt simple Erlang prohect.
+all: deps
+	rebar compile
 
-ERLS = $(wildcard *.erl)
-BEAMS = $(ERLS:.erl=.beam)
-
-%.beam: %.erl
-	erlc $<
-
-all: $(BEAMS)
-
-pratt_parser.beam pratt_evaluator.beam: token.hrl
+deps:
+	rebar get-deps
 
 clean:
-	rm *.beam
+	rebar clean
+
+distclean: clean
+	rebar delete-deps
