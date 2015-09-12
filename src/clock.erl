@@ -50,8 +50,8 @@ equations_for_time(Time) ->
     TimeDigits = [D || D <- Time, D /= $:],
   
     %% We're going to take the time and intersperse the digits with
-    %% all combinations of operators.  Ops is the array of all
-    %% possible operator combinations of the correct length to
+    %% all combinations of operators.  OpCombinations is the array of
+    %% all possible operator combinations of the correct length to
     %% intersperse with the time.
 
     OpCombinations = combinations(
@@ -70,16 +70,14 @@ equations_for_time(Time) ->
     %% Zip each operator set into the digits and flatten the result to
     %% make a "string'.
 
-    Lumpy = lists:map(
-      fun (Ops) ->
-	      lists:zipwith(
-		fun (Op, Digit) ->
-			[Op, Digit]
-		end,
-		["" | Ops],   % No operator before the initial digit.
-		TimeDigits)
-      end,
-      ValidOpCombinations),
+    Lumpy =
+	[lists:zipwith(
+	   fun (Op, Digit) ->
+		   [Op, Digit]
+	   end,
+	   ["" | Ops],   % No operator before the initial digit.
+	   TimeDigits)
+	 || Ops <- ValidOpCombinations],
 
     [lists:flatten(E) || E <- Lumpy].
 
